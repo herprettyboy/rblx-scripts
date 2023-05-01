@@ -24,6 +24,7 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 end)
 end)
 
+--auto dig/click
 local autoClickEnabled = true
 
 game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessedEvent)
