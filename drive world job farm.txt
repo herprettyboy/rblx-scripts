@@ -1,0 +1,86 @@
+--Game Link: https://web.roblox.com/games/10704789056/Drive-World
+
+--[[ 
+
+__/\\\\\\\\\\\__/\\\\\_____/\\\__/\\\________/\\\__/\\\\\\\\\\\_____/\\\\\\\\\\\____/\\\\\\\\\\\__/\\\\\\\\\\\\\____/\\\______________/\\\\\\\\\\\\\\\_______________/\\\\\\\\\\\\__/\\\________/\\\__/\\\\\\\\\\\_        
+ _\/////\\\///__\/\\\\\\___\/\\\_\/\\\_______\/\\\_\/////\\\///____/\\\/////////\\\_\/////\\\///__\/\\\/////////\\\_\/\\\_____________\/\\\///////////______________/\\\//////////__\/\\\_______\/\\\_\/////\\\///__       
+  _____\/\\\_____\/\\\/\\\__\/\\\_\//\\\______/\\\______\/\\\______\//\\\______\///______\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\________________________/\\\_____________\/\\\_______\/\\\_____\/\\\_____      
+   _____\/\\\_____\/\\\//\\\_\/\\\__\//\\\____/\\\_______\/\\\_______\////\\\_____________\/\\\_____\/\\\\\\\\\\\\\\__\/\\\_____________\/\\\\\\\\\\\_______________\/\\\____/\\\\\\\_\/\\\_______\/\\\_____\/\\\_____     
+    _____\/\\\_____\/\\\\//\\\\/\\\___\//\\\__/\\\________\/\\\__________\////\\\__________\/\\\_____\/\\\/////////\\\_\/\\\_____________\/\\\///////________________\/\\\___\/////\\\_\/\\\_______\/\\\_____\/\\\_____    
+     _____\/\\\_____\/\\\_\//\\\/\\\____\//\\\/\\\_________\/\\\_____________\////\\\_______\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\_______________________\/\\\_______\/\\\_\/\\\_______\/\\\_____\/\\\_____   
+      _____\/\\\_____\/\\\__\//\\\\\\_____\//\\\\\__________\/\\\______/\\\______\//\\\______\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\_______________________\/\\\_______\/\\\_\//\\\______/\\\______\/\\\_____  
+       __/\\\\\\\\\\\_\/\\\___\//\\\\\______\//\\\________/\\\\\\\\\\\_\///\\\\\\\\\\\/____/\\\\\\\\\\\_\/\\\\\\\\\\\\\/__\/\\\\\\\\\\\\\\\_\/\\\\\\\\\\\\\\\___________\//\\\\\\\\\\\\/___\///\\\\\\\\\/____/\\\\\\\\\\\_ 
+        _\///////////__\///_____\/////________\///________\///////////____\///////////_____\///////////__\/////////////____\///////////////__\///////////////_____________\////////////_______\/////////_____\///////////__
+
+                    By IBinkyI#1238      ]]--
+
+local s, Client = game, game.Players.LocalPlayer
+local GC = getconnections or get_signal_cons -- synx / krnl support
+
+if GC then
+	for _,v in pairs(GC(Client.Idled)) do
+	    if v['Disable'] then
+			v['Disable'](v)
+		elseif v['Disconnect'] then
+			v['Disconnect'](v)
+		end
+	end
+end
+
+s.StarterGui:SetCore('SendNotification',{
+	Title = 'Autofarm', 
+	Text = 'by IBinkyI#1238', 
+	Icon = 'rbxassetid://9395380227',
+	Duration = math.huge
+})
+
+    while task.wait() and farmTrailer do 
+        pcall(function()
+            if not Client.PlayerGui.Interface.Score.Frame.Jobs.Visible then 
+                s.ReplicatedStorage.Systems.Jobs.StartJob:InvokeServer('TrailerDelivery', 'Dealership'); 
+                task.wait(waitTime)
+            elseif Client.PlayerGui.Interface.Score.Frame.Jobs.Visible then 
+                for _,v in pairs(workspace.Cars:GetDescendants()) do 
+                    if v.Name == 'Owner' and v.Value == Client and Client:DistanceFromCharacter(s.Workspace.CompletionRegion.Primary.Position) > 20 then 
+                        workspace.CompletionRegion.Primary.Size = Vector3.new(100, 0.5, 350)
+                        v.Parent:SetPrimaryPartCFrame(workspace.CompletionRegion.Primary.CFrame * CFrame.new(0, 3, -20))
+                        task.wait(.33)
+                    end 
+                end
+                
+                if Client.PlayerGui.Interface.JobComplete.Enabled then
+                    s.ReplicatedStorage.Systems.Jobs.CashBankedEarnings:FireServer()
+                    Client.PlayerGui.Interface.JobComplete.Enabled = false;
+                    s.Lighting.BackgroundBlur.Enabled = false;
+                end
+            end 
+        end)
+    end
+    
+    while task.wait() and farmFood do 
+        pcall(function()
+        if not Client.PlayerGui.Interface.Score.Frame.Jobs.Visible then 
+            local randomNumber = math.random(1, 7)
+            for i,v in pairs(workspace.Jobs.FoodDelivery.StartPoints:GetChildren()) do
+                if i == randomNumber then
+                    s.ReplicatedStorage.Systems.Jobs.StartJob:InvokeServer('FoodDelivery', v.Name)
+                end
+            end
+            task.wait(waitTime)
+        elseif Client.PlayerGui.Interface.Score.Frame.Jobs.Visible then 
+            for _,v in pairs(workspace.Cars:GetDescendants()) do 
+                if v.Name == 'Owner' and v.Value == Client and Client:DistanceFromCharacter(s.Workspace.CompletionRegion.Primary.Position) > 20 then 
+                    workspace.CompletionRegion.Primary.Size = Vector3.new(100, 0.5, 350)
+                    v.Parent:SetPrimaryPartCFrame(workspace.CompletionRegion.Primary.CFrame * CFrame.new(0, 3, -20))
+                    task.wait(.33)
+                end 
+            end
+            
+            if Client.PlayerGui.Interface.JobComplete.Enabled then
+                s.ReplicatedStorage.Systems.Jobs.CashBankedEarnings:FireServer()
+                Client.PlayerGui.Interface.JobComplete.Enabled = false;
+                s.Lighting.BackgroundBlur.Enabled = false;
+            end
+        end
+    end)
+end
