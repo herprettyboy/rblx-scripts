@@ -4,7 +4,7 @@ end
 
 Rizz_Lines = loadstring(game:HttpGet(""))()
 
-local lib = loadstring(game:HttpGet(""))()
+local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/herprettyboy/rblx-scripts/main/rizz%20ui.txt"))()
 
 local Rizz_Main = lib:Window("Rizzer")
 
