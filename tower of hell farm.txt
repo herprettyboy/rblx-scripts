@@ -1,0 +1,490 @@
+--Game Link: https://web.roblox.com/games/1962086868/Tower-of-Hell
+
+--[[ 
+
+__/\\\\\\\\\\\__/\\\\\_____/\\\__/\\\________/\\\__/\\\\\\\\\\\_____/\\\\\\\\\\\____/\\\\\\\\\\\__/\\\\\\\\\\\\\____/\\\______________/\\\\\\\\\\\\\\\_______________/\\\\\\\\\\\\__/\\\________/\\\__/\\\\\\\\\\\_        
+ _\/////\\\///__\/\\\\\\___\/\\\_\/\\\_______\/\\\_\/////\\\///____/\\\/////////\\\_\/////\\\///__\/\\\/////////\\\_\/\\\_____________\/\\\///////////______________/\\\//////////__\/\\\_______\/\\\_\/////\\\///__       
+  _____\/\\\_____\/\\\/\\\__\/\\\_\//\\\______/\\\______\/\\\______\//\\\______\///______\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\________________________/\\\_____________\/\\\_______\/\\\_____\/\\\_____      
+   _____\/\\\_____\/\\\//\\\_\/\\\__\//\\\____/\\\_______\/\\\_______\////\\\_____________\/\\\_____\/\\\\\\\\\\\\\\__\/\\\_____________\/\\\\\\\\\\\_______________\/\\\____/\\\\\\\_\/\\\_______\/\\\_____\/\\\_____     
+    _____\/\\\_____\/\\\\//\\\\/\\\___\//\\\__/\\\________\/\\\__________\////\\\__________\/\\\_____\/\\\/////////\\\_\/\\\_____________\/\\\///////________________\/\\\___\/////\\\_\/\\\_______\/\\\_____\/\\\_____    
+     _____\/\\\_____\/\\\_\//\\\/\\\____\//\\\/\\\_________\/\\\_____________\////\\\_______\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\_______________________\/\\\_______\/\\\_\/\\\_______\/\\\_____\/\\\_____   
+      _____\/\\\_____\/\\\__\//\\\\\\_____\//\\\\\__________\/\\\______/\\\______\//\\\______\/\\\_____\/\\\_______\/\\\_\/\\\_____________\/\\\_______________________\/\\\_______\/\\\_\//\\\______/\\\______\/\\\_____  
+       __/\\\\\\\\\\\_\/\\\___\//\\\\\______\//\\\________/\\\\\\\\\\\_\///\\\\\\\\\\\/____/\\\\\\\\\\\_\/\\\\\\\\\\\\\/__\/\\\\\\\\\\\\\\\_\/\\\\\\\\\\\\\\\___________\//\\\\\\\\\\\\/___\///\\\\\\\\\/____/\\\\\\\\\\\_ 
+        _\///////////__\///_____\/////________\///________\///////////____\///////////_____\///////////__\/////////////____\///////////////__\///////////////_____________\////////////_______\/////////_____\///////////__
+
+                    By IBinkyI#1238      ]]--
+
+local Settings = {
+    Debug = true
+}
+
+local function Debug(Source, ...)
+    if Settings.Debug then
+        warn("[" .. Source .. " Debug] :", ...)
+    end
+end
+
+local Utility = {}
+
+function Utility:GS(ClassName)
+    return game:GetService(ClassName)
+end
+
+Utility.HTTPRequest = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+
+if not Utility.Request then
+    Utility.Request = function(Table)
+        local Response = {}
+        Response.Body = game:HttpGet(Table.Url)
+        return Response
+    end
+end
+
+function Utility:BetterRound(Number, DecimalPlaces)
+    local Multiplied = 10 ^ (DecimalPlaces or 0)
+    return math.floor(Number * Multiplied + 0.5) / Multiplied
+end
+
+local Players = Utility:GS("Players")
+local RunService = Utility:GS("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+
+local Main = {}
+
+Main.ScriptConnections = {}
+Main.TogglesQueue = {}
+Main.DropdownQueue = {}
+Main.SlidersQueue = {}
+
+function Main:AddToggleToQueue(Toggle, Function)
+    self.TogglesQueue[Toggle] = Function
+end
+
+function Main:AddDropdownToQueue(Dropdown, Function)
+    self.DropdownQueue[Dropdown] = Function
+end
+
+function Main:AddSliderToQueue(Slider, Function)
+    self.SlidersQueue[Slider] = Function
+end
+
+function Main:TP(Position)
+    if typeof(Position) == "Instance" then
+        Position = Position.CFrame
+    end
+    if typeof(Position) == "Vector3" then
+        Position = CFrame.new(Position)
+    end
+    if typeof(Position) == "CFrame" then
+        LocalPlayer.Character:PivotTo(Position)
+    else
+        warn("[!] Invalid Argument Passed to TP()")
+    end
+end
+
+-- I know I didn't have to split the Slider queue and Toggle queue, but it feels a bit more organized and readable this way.
+
+function Main:Initialize()
+    for Toggle, Function in next, self.TogglesQueue do
+        Toggle:OnChanged(Function)
+    end
+    for Dropdown, Function in next, self.DropdownQueue do
+        Dropdown:OnChanged(Function)
+    end
+    for Slider, Function in next, self.SlidersQueue do
+        Slider:OnChanged(Function)
+    end
+    Debug("Initializer", "User Interface connections successfully initialized.")
+end
+
+function Main:BindDualConnections(Connection, DeleteConnection)
+    DeleteConnection:Once(function()
+        Connection:Disconnect()
+        Connection = nil
+        DeleteConnection:Disconnect()
+        DeleteConnection = nil
+    end)
+end
+
+function Main:HookAnticheat()
+    local Success, _ = pcall(function()
+        local AnticheatScriptMain = LocalPlayer.PlayerScripts:WaitForChild("LocalScript", 5)
+
+        local MainKickFunction = getsenv(AnticheatScriptMain).kick
+        
+        hookfunction(MainKickFunction, function() task.wait(9e9) end)
+        
+        for _, Connection in next, getconnections(AnticheatScriptMain.Changed) do
+            hookfunction(Connection.Function, function() task.wait(9e9) end)
+        end
+    end)
+    if Success then
+        Debug("Anticheat Hook", "Anticheat has been successfuly hooked.")
+    else
+        Debug("Anticheat Hook", "Anticheat hook has failed! >_<")
+    end
+end
+
+Main.AutofarmFunction = function()
+    local Center = workspace.tower.sections.start.center
+
+    while task.wait(1) do
+        
+        
+        local StartingPosition = LocalPlayer.Character.HumanoidRootPart.Position
+        local FinishCF = workspace.tower.sections.finish.FinishGlow.CFrame
+        local EndingPosition = FinishCF.Position + FinishCF.LookVector:Cross(Vector3.new(0, -1, 0)).Unit * 3
+        local TargetXZ = CFrame.new(Center.Position + Center.CFrame.LookVector.Unit * 80)
+
+        local AnchorPart = Instance.new("Part", workspace)
+        AnchorPart.Anchored = true
+        AnchorPart.Size = Vector3.new(5,1,5)
+
+        Main:TP(TargetXZ)
+        task.wait()
+        AnchorPart.Position = LocalPlayer.Character.HumanoidRootPart.Position - Vector3.new(0,3,0)
+
+        repeat
+            if (TargetXZ.p * Vector3.new(1, 0, 1) - LocalPlayer.Character.HumanoidRootPart.CFrame.p * Vector3.new(1, 0, 1)).Magnitude > 5 then
+                LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.p * Vector3.new(0, 1, 0) + TargetXZ.p * Vector3.new(1, 0, 1))
+            end
+            task.wait(math.random(0, 5 * (1 - game:GetService("ReplicatedStorage").time.Value / game:GetService("ReplicatedStorage").roundTimeout.Value)))
+
+            AnchorPart.CFrame = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.p - Vector3.new(0,3,0))
+
+            LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+
+            task.wait(0.1)
+
+            repeat RunService.Heartbeat:Wait() until LocalPlayer.Character.HumanoidRootPart.Velocity.Y < math.random(-10, 10) / 10
+
+            if math.random(1,5) ~= 4 then
+                AnchorPart.CFrame = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.p - Vector3.new(0,3,0))
+            else
+                AnchorPart.CFrame = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.p - Vector3.new(0,12,0))
+            end
+            
+        until LocalPlayer.Character.HumanoidRootPart.Position.Y >= FinishCF.Position.Y
+
+        Main:TP(EndingPosition)
+        repeat
+            task.wait(0.1)
+            for i = 30, 1, -1 do
+                LocalPlayer.Character.HumanoidRootPart.Velocity = (FinishCF.p - LocalPlayer.Character.HumanoidRootPart.CFrame.p).Unit * 5
+                RunService.Heartbeat:Wait()
+            end
+        until table.find(game.ReplicatedStorage.getWinners:InvokeServer(), LocalPlayer)
+        wait(3)
+        Main:TP(StartingPosition)
+        AnchorPart:Destroy()
+        repeat wait() until game:GetService("ReplicatedStorage").time.Value >= game:GetService("ReplicatedStorage").roundTimeout.Value - 1
+        wait(5)
+    end
+end
+
+Main.AutofarmCoroutine = nil
+
+Main:HookAnticheat()
+
+-- Script actually starts here...
+
+local DependencyLoadStartTime = tick()
+Debug("Dependency Loader", "Loading dependencies...")
+
+local VelocityFly = loadstring(Utility.HTTPRequest({Url = "https://raw.githubusercontent.com/centerepic/VelocityFly/main/VelocityFly.lua"}).Body)()
+
+local repo = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
+
+local Library = loadstring(Utility.HTTPRequest({Url = repo .. 'Library.lua'}).Body)()
+local ThemeManager = loadstring(Utility.HTTPRequest({Url = repo .. 'addons/ThemeManager.lua'}).Body)()
+local SaveManager = loadstring(Utility.HTTPRequest({Url = repo .. 'addons/SaveManager.lua'}).Body)()
+
+Debug("Dependency Loader", "Loaded dependencies in " .. Utility:BetterRound(tick() - DependencyLoadStartTime, 2) .. " seconds.")
+
+local Window = Library:CreateWindow({
+    Title = 'Invisible | Tower Of Hell',
+    Center = true,
+    AutoShow = true,
+    TabPadding = 8,
+    MenuFadeTime = 0.2
+})
+
+local Tabs = {
+    Main = Window:AddTab('Main'),
+    ['UI Settings'] = Window:AddTab('UI Settings'),
+}
+
+local GameGroupBox = Tabs.Main:AddLeftGroupbox("Game")
+
+local TeleportToFinishDependencyBox = GameGroupBox:AddDependencyBox()
+
+TeleportToFinishDependencyBox:AddButton({
+    Text = 'Teleport To Finish',
+    Func = function()
+        local FinishCF = workspace.tower.sections.finish.FinishGlow.CFrame
+        LocalPlayer.Character:PivotTo(FinishCF + FinishCF.LookVector:Cross(Vector3.new(0, -1, 0)).Unit * 3)
+    end,
+    DoubleClick = false,
+    Tooltip = 'Teleports you to the end of the tower.'
+})
+
+Main:AddToggleToQueue(
+    GameGroupBox:AddToggle("Autofarm", {
+        Text = 'Semi-Legit AutoFinish',
+        Default = false,
+        Tooltip = 'Automatically farms the game for you. Nice!'
+    }),
+    function(Value)
+        if Value then
+            if Main.AutofarmCoroutine then
+                coroutine.close(Main.AutofarmCoroutine)
+                Main.AutofarmCoroutine = nil
+            end
+            Main.AutofarmCoroutine = coroutine.create(Main.AutofarmFunction)
+            coroutine.resume(Main.AutofarmCoroutine)
+        else
+            if Main.AutofarmCoroutine then
+                coroutine.close(Main.AutofarmCoroutine)
+                Main.AutofarmCoroutine = nil
+            end
+        end
+    end
+)
+
+
+Main:AddToggleToQueue(
+    GameGroupBox:AddToggle("NoKillparts", {
+        Text = 'No Kill Parts',
+        Default = false,
+        Tooltip = 'Disables all kill parts.'
+    }),
+    function(Value)
+        local Humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+        if Humanoid then
+            for _, Connection in next, getconnections(Humanoid.Touched) do
+                if Value then
+                    Connection:Disable()
+                else
+                    Connection:Enable()
+                end
+            end
+        end
+    end
+)
+
+Main:AddToggleToQueue(
+    GameGroupBox:AddToggle("FreezeConveyors", {
+        Text = 'Freeze Conveyors',
+        Default = false,
+        Tooltip = 'Freezes all conveyors.'
+    }),
+    function(Value)
+        LocalPlayer.PlayerScripts.ConveyorTextureScript.Disabled = Value
+
+        if Value then
+            for _, Conveyor in next, workspace.tower:GetDescendants() do
+                if Conveyor:FindFirstChild("CONVEYOR") and not Conveyor:FindFirstChild("frozen") then
+                    local Frozen = Instance.new("Vector3Value")
+                    Frozen.Name = "frozen"
+                    Frozen.Value = Conveyor.Velocity
+                    Frozen.Parent = Conveyor
+                    Conveyor.Anchored = true
+                    Conveyor.Velocity = Vector3.new()
+                end
+            end
+        else
+            for _, Conveyor in next, workspace.tower:GetDescendants() do
+                if Conveyor:FindFirstChild("CONVEYOR") and Conveyor:FindFirstChild("frozen") then
+                    if Conveyor.frozen:IsA("Vector3Value") then
+                        Conveyor.Velocity = Conveyor.frozen.Value
+                    else
+                        Conveyor.Anchored = false
+                    end
+                    Conveyor.frozen:Destroy()
+                end
+            end
+        end
+    end
+)
+
+Main:AddToggleToQueue(
+    GameGroupBox:AddToggle("FreezeMovingParts", {
+        Text = 'Freeze Moving Parts',
+        Default = false,
+        Tooltip = 'Freezes all moving parts.'
+    }),
+    function(Value)
+        if Value then
+            for _, MovingPart in next, workspace.tower:GetDescendants() do
+                if MovingPart:IsA("BasePart") and not MovingPart:FindFirstChild("CONVEYOR") and not MovingPart:FindFirstChild("frozen") and MovingPart.Anchored == false then
+                    local Frozen = Instance.new("Folder")
+                    Frozen.Name = "frozen"
+                    Frozen.Parent = MovingPart
+                    MovingPart.Anchored = true
+                    MovingPart.Velocity = Vector3.new()
+                    MovingPart.RotVelocity = Vector3.new()
+                end
+            end
+        else
+            for _, MovingPart in next, workspace.tower:GetDescendants() do
+                if MovingPart:IsA("BasePart") and not MovingPart:FindFirstChild("CONVEYOR") and MovingPart:FindFirstChild("frozen") then
+                    if not MovingPart.frozen:IsA("Vector3Value") then
+                        MovingPart.Anchored = false
+                    end
+                    MovingPart.frozen:Destroy()
+                end
+            end
+        end
+    end
+)
+
+local CharacterGroupBox = Tabs.Main:AddRightGroupbox("Character")
+
+Main:AddToggleToQueue(
+    CharacterGroupBox:AddToggle("Fly", {
+        Text = 'Enables Velocity-Fly.',
+        Default = false,
+        Tooltip = 'Allows you to fly around the map.'
+    }),
+    function(Value)
+        VelocityFly:Toggle(Value)
+    end
+)
+
+Main:AddSliderToQueue(
+    CharacterGroupBox:AddSlider('WalkSpeed', {
+        Text = "Walkspeed",
+        Default = 16,
+        Min = 16,
+        Max = 75,
+        Rounding = 1,
+        Compact = false
+    }),
+    function(Value)
+        local ScriptConnections = Main.ScriptConnections
+        local Humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+
+        if Value ~= 16 and Humanoid then
+            if ScriptConnections.Walkspeed and ScriptConnections.Walkspeed.Connected then
+                ScriptConnections.Walkspeed:Disconnect()
+                ScriptConnections.Walkspeed = nil
+            end
+            
+            ScriptConnections.Walkspeed = Humanoid.Changed:Connect(function()
+                Humanoid.WalkSpeed = Value
+            end)
+        else
+            if ScriptConnections.Walkspeed and ScriptConnections.Walkspeed.Connected then
+                ScriptConnections.Walkspeed:Disconnect()
+                ScriptConnections.Walkspeed = nil
+            end
+        end
+    end
+)
+
+Main:AddSliderToQueue(
+    CharacterGroupBox:AddSlider('MultiJump', {
+        Text = "MultiJump",
+        Default = 0,
+        Min = 0,
+        Max = 5,
+        Rounding = 0,
+        Compact = false
+    }),
+    function(Value)
+        local ExtraJumper = LocalPlayer.Character:FindFirstChild("ExtraJumper")
+        if ExtraJumper and ExtraJumper:FindFirstChild("multiJumpCount") then
+            ExtraJumper.multiJumpCount.Value = Value
+        end
+    end
+)
+
+local ToolGroupBox = Tabs.Main:AddRightGroupbox("Clientside Tools")
+
+local Tools = {}
+local ToolsLookup = {}
+
+for _, Tool in next, game.ReplicatedStorage.Gear:GetChildren() do
+    ToolsLookup[Tool.Name] = Tool
+    table.insert(Tools, Tool.Name)
+end
+
+ToolGroupBox:AddLabel("(Because I know someone is gonna complain about this) The tools given by this are CLIENT-SIDE. Most tools will not function properly.", true)
+ToolGroupBox:AddDivider()
+
+Main:AddDropdownToQueue(
+    ToolGroupBox:AddDropdown('ToolGiverDropDown', {
+        Values = Tools,
+        Default = nil,
+        AllowNull = true,
+        Multi = false,
+        Text = 'Give Tool',
+        Tooltip = 'Gives you the tool (Doesn\'t replicate)',
+    }),
+    function(Value)
+        if not LocalPlayer.Backpack:FindFirstChild(Value) and not LocalPlayer.Character:FindFirstChild(Value) and ToolsLookup[Value] then
+            local Tool = ToolsLookup[Value]
+            Tool:Clone().Parent = LocalPlayer.Backpack
+        end
+    end
+)
+
+-- UI Settings
+local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
+
+MenuGroup:AddButton('Unload', function() Library:Unload() end)
+MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'LeftControl', NoUI = true, Text = 'Menu keybind' })
+
+Library.ToggleKeybind = Options.MenuKeybind
+
+ThemeManager:SetLibrary(Library); SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings(); SaveManager:SetIgnoreIndexes({ 'MenuKeybind' })
+ThemeManager:SetFolder('Invisible'); SaveManager:SetFolder('Invisible/towerofhell')
+SaveManager:BuildConfigSection(Tabs['UI Settings']); ThemeManager:ApplyToTab(Tabs['UI Settings'])
+
+SaveManager:LoadAutoloadConfig()
+
+Main:Initialize()
+
+TeleportToFinishDependencyBox:SetupDependencies({
+    { Toggles.Autofarm, false }
+})
+
+LocalPlayer.CharacterAdded:Connect(function(Character)
+    if Toggles.NoKillparts.Value == true then
+        task.spawn(function()
+            Character:WaitForChild("KillScript")
+            local Humanoid = Character:WaitForChild("Humanoid")
+            for _, Connection in next, getconnections(Humanoid.Touched) do
+                Connection:Disable()
+            end
+        end)
+    end
+    if Options.MultiJump.Value > 0 then
+        task.spawn(function()
+            local ExtraJumper = Character:WaitForChild("ExtraJumper")
+            ExtraJumper:FindFirstChild("multiJumpCount")
+            ExtraJumper.multiJumpCount.Value = Options.MultiJump.Value
+        end)
+    end
+    if Options.WalkSpeed.Value > 16 then
+        task.spawn(function()
+            local ScriptConnections = Main.ScriptConnections
+            local Humanoid = Character:WaitForChild("Humanoid")
+            local Value = Options.WalkSpeed.Value
+            if ScriptConnections.Walkspeed and ScriptConnections.Walkspeed.Connected then
+                ScriptConnections.Walkspeed:Disconnect()
+                ScriptConnections.Walkspeed = nil
+            end
+            
+            ScriptConnections.Walkspeed = Humanoid.Changed:Connect(function()
+                Humanoid.WalkSpeed = Value
+            end)
+        end)
+    end
+end)
+
+for _, Connection in next, getconnections(LocalPlayer.Idled) do
+    Connection:Disable()
+end
